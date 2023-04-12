@@ -32,38 +32,46 @@ public class MainController : ControllerBase
         };
     }
     
-    [HttpGet("hello")]
-    public async Task<IActionResult> GetHello()
+    [HttpPost("cpu/{cpuPercentage}")]
+    public async Task<IActionResult> LoadCpu([FromRoute] int cpuPercentage)
     {
-        _logger.LogInformation("[{Time}] Saying hello", DateTime.UtcNow.ToString("o"));
+        var executionId = Guid.NewGuid();
+        
+        _logger.LogInformation("[{ExecutionId}] Starting CPU {CpuPercentage}% load", 
+            executionId, cpuPercentage);
 
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(5));
-
-        await ConsumeCpu(80, cancellationTokenSource.Token);
+        
+        ConsumeCpu(executionId, cpuPercentage, cancellationTokenSource.Token);
         
         return Ok();
     }
 
-    private static Task ConsumeCpu(int percentage, CancellationToken cancellationToken)
+    private async Task ConsumeCpu(Guid executionId, int cpuPercentage, CancellationToken cancellationToken)
     {
-        if (percentage < 0 || percentage > 100)
-            throw new ArgumentException("percentage");
-        
-        var watch = new Stopwatch();
-        watch.Start();            
-        while (!cancellationToken.IsCancellationRequested)
+        Task.Run(() =>
         {
-            // Make the loop go on for "percentage" milliseconds then sleep the 
-            // remaining percentage milliseconds. So 40% utilization means work 40ms and sleep 60ms
-            if (watch.ElapsedMilliseconds > percentage)
-            {
-                Thread.Sleep(100 - percentage);
-                watch.Reset();
-                watch.Start();
-            }
-        }
+            if (cpuPercentage < 0 || cpuPercentage > 100)
+                throw new ArgumentException("percentage");
 
-        return Task.CompletedTask;
+            var watch = new Stopwatch();
+            watch.Start();
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                // Make the loop go on for "percentage" milliseconds then sleep the 
+                // remaining percentage milliseconds. So 40% utilization means work 40ms and sleep 60ms
+                if (watch.ElapsedMilliseconds > cpuPercentage)
+                {
+                    Thread.Sleep(100 - cpuPercentage);
+                    watch.Reset();
+                    watch.Start();
+                }
+            }
+            
+            _logger.LogInformation("[{ExecutionId}] CPU {CpuPercentage}% load finished", 
+                executionId, cpuPercentage);
+            
+        }, cancellationToken);
     }
 }
