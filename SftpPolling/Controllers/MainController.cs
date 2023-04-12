@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
 namespace SftpPolling.Controllers;
@@ -32,45 +31,34 @@ public class MainController : ControllerBase
         };
     }
     
-    [HttpPost("cpu/{cpuPercentage}")]
-    public async Task<IActionResult> LoadCpu([FromRoute] int cpuPercentage)
+    [HttpPost("cpu/{DurationInSeconds}")]
+    public async Task<IActionResult> LoadCpu([FromRoute] int durationInSeconds)
     {
         var executionId = Guid.NewGuid();
         
-        _logger.LogInformation("[{ExecutionId}] Starting CPU {CpuPercentage}% load", 
-            executionId, cpuPercentage);
+        _logger.LogInformation("[{ExecutionId}] Starting CPU load", 
+            executionId);
 
         var cancellationTokenSource = new CancellationTokenSource();
-        cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(5));
+        cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(durationInSeconds));
         
-        ConsumeCpu(executionId, cpuPercentage, cancellationTokenSource.Token);
+        ConsumeCpu(executionId, cancellationTokenSource.Token);
         
         return Ok();
     }
 
-    private async Task ConsumeCpu(Guid executionId, int cpuPercentage, CancellationToken cancellationToken)
+    private async Task ConsumeCpu(Guid executionId, CancellationToken cancellationToken)
     {
         Task.Run(() =>
         {
-            if (cpuPercentage < 0 || cpuPercentage > 100)
-                throw new ArgumentException("percentage");
-
-            var watch = new Stopwatch();
-            watch.Start();
             while (!cancellationToken.IsCancellationRequested)
             {
-                // Make the loop go on for "percentage" milliseconds then sleep the 
-                // remaining percentage milliseconds. So 40% utilization means work 40ms and sleep 60ms
-                if (watch.ElapsedMilliseconds > cpuPercentage)
-                {
-                    Thread.Sleep(100 - cpuPercentage);
-                    watch.Reset();
-                    watch.Start();
-                }
+                var random = new Random();
+                var x = random.NextDouble() / random.NextDouble() % 10 * random.NextDouble();
             }
-            
-            _logger.LogInformation("[{ExecutionId}] CPU {CpuPercentage}% load finished", 
-                executionId, cpuPercentage);
+
+            _logger.LogInformation("[{ExecutionId}] CPU load finished", 
+                executionId);
             
         }, cancellationToken);
     }

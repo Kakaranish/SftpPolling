@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Options;
 using Renci.SshNet;
 using Renci.SshNet.Async;
-using SftpPolling.Configuration;
 using SftpPolling.Configuration.AppsettingsOptions;
 using ConnectionInfo = Renci.SshNet.ConnectionInfo;
 
